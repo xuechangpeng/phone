@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGL Cube Animation</title>
+    <title>Optimized WebGL Cube Animation</title>
     <style>
-        body { margin: 0; }
-        canvas { display: block; }
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; touch-action: none; }
     </style>
 </head>
 <body>
@@ -18,6 +18,11 @@
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
+
+    // Adjust quality for mobile devices
+    if (/Mobi|Android/i.test(navigator.userAgent)) {
+        renderer.setPixelRatio(window.devicePixelRatio * 0.5); // Lower pixel ratio on mobile
+    }
 
     // Cube creation
     const geometry = new THREE.BoxGeometry();
@@ -44,6 +49,57 @@
         renderer.setSize(width, height);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
+    });
+
+    // Touch event handling (example: simple rotation control)
+    let isDragging = false;
+    let previousMousePosition = { x: 0, y: 0 };
+
+    renderer.domElement.addEventListener('mousedown', (event) => {
+        isDragging = true;
+        previousMousePosition = { x: event.clientX, y: event.clientY };
+    });
+
+    renderer.domElement.addEventListener('mousemove', (event) => {
+        if (!isDragging) return;
+        const deltaMove = {
+            x: event.clientX - previousMousePosition.x,
+            y: event.clientY - previousMousePosition.y
+        };
+
+        const rotateSpeed = 0.01;
+        cube.rotation.x -= deltaMove.y * rotateSpeed;
+        cube.rotation.y -= deltaMove.x * rotateSpeed;
+
+        previousMousePosition = { x: event.clientX, y: event.clientY };
+    });
+
+    renderer.domElement.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+
+    // Touch events for mobile
+    renderer.domElement.addEventListener('touchstart', (event) => {
+        isDragging = true;
+        previousMousePosition = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    }, { passive: false });
+
+    renderer.domElement.addEventListener('touchmove', (event) => {
+        if (!isDragging) return;
+        const deltaMove = {
+            x: event.touches[0].clientX - previousMousePosition.x,
+            y: event.touches[0].clientY - previousMousePosition.y
+        };
+
+        const rotateSpeed = 0.01;
+        cube.rotation.x -= deltaMove.y * rotateSpeed;
+        cube.rotation.y -= deltaMove.x * rotateSpeed;
+
+        previousMousePosition = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    }, { passive: false });
+
+    renderer.domElement.addEventListener('touchend', () => {
+        isDragging = false;
     });
 </script>
 </body>
