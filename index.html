@@ -1,8 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>PDF in Modal</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimized WebGL Cube Animation</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; touch-action: none; }
+    </style>
 </head>
 <body>
 <button id="openPdf">Open PDF</button>
@@ -18,61 +23,94 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.7.570/pdf.min.js"></script>
 <script>
-// 获取模态框
-var modal = document.getElementById("pdfModal");
+    // Scene setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
 
-// 获取按钮，点击它会打开模态框
-var btn = document.getElementById("openPdf");
+    // Adjust quality for mobile devices
+    if (/Mobi|Android/i.test(navigator.userAgent)) {
+        renderer.setPixelRatio(window.devicePixelRatio * 0.5); // Lower pixel ratio on mobile
+    }
 
-// 获取<span>元素，点击它关闭模态框
-var span = document.getElementsByClassName("close")[0];
+    // Cube creation
+    const geometry = new THREE.BoxGeometry();
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+    const cube = new THREE.Mesh(geometry, material);
+    scene.add(cube);
 
-// 点击按钮打开模态框
-btn.onclick = function() {
-  modal.style.display = "block";
-  renderPDF('JTG 2111-2019 小交通量农村公路工程技术标准.pdf', document.getElementById('pdfCanvas'));
-}
+    camera.position.z = 5;
 
-// 点击<span> (x), 关闭模态框
-span.onclick = function() {
-  modal.style.display = "none";
-}
+    // Animation loop
+    function animate() {
+        requestAnimationFrame(animate);
+        cube.rotation.x += 0.01;
+        cube.rotation.y += 0.01;
+        renderer.render(scene, camera);
+    }
 
-// 在用户点击其他地方时关闭模态框
-window.onclick = function(event) {
-  if (event.target == modal) {
-    modal.style.display = "none";
-  }
-}
+    animate();
 
-function renderPDF(url, canvasContainer) {
-    const pdfjsLib = window.pdfjsLib;
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.7.570/pdf.worker.min.js';
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        renderer.setSize(width, height);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+    });
 
-    var loadingTask = pdfjsLib.getDocument(url);
-    loadingTask.promise.then(function(pdf) {
-        // Fetch the first page
-        var pageNumber = 1;
-        pdf.getPage(pageNumber).then(function(page) {
-            var scale = 1.5;
-            var viewport = page.getViewport({ scale: scale });
+    // Touch event handling (example: simple rotation control)
+    let isDragging = false;
+    let previousMousePosition = { x: 0, y: 0 };
 
-            // Prepare canvas using PDF page dimensions
-            var canvas = document.createElement('canvas');
-            var context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
+    renderer.domElement.addEventListener('mousedown', (event) => {
+        isDragging = true;
+        previousMousePosition = { x: event.clientX, y: event.clientY };
+    });
 
-            // Render PDF page into canvas context
-            var renderContext = {
-                canvasContext: context,
-                viewport: viewport
-            };
-            page.render(renderContext);
-            canvasContainer.appendChild(canvas);
-        });
-    }, function (reason) {
-        console.error(reason);
+    renderer.domElement.addEventListener('mousemove', (event) => {
+        if (!isDragging) return;
+        const deltaMove = {
+            x: event.clientX - previousMousePosition.x,
+            y: event.clientY - previousMousePosition.y
+        };
+
+        const rotateSpeed = 0.01;
+        cube.rotation.x -= deltaMove.y * rotateSpeed;
+        cube.rotation.y -= deltaMove.x * rotateSpeed;
+
+        previousMousePosition = { x: event.clientX, y: event.clientY };
+    });
+
+    renderer.domElement.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+
+    // Touch events for mobile
+    renderer.domElement.addEventListener('touchstart', (event) => {
+        isDragging = true;
+        previousMousePosition = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    }, { passive: false });
+
+    renderer.domElement.addEventListener('touchmove', (event) => {
+        if (!isDragging) return;
+        const deltaMove = {
+            x: event.touches[0].clientX - previousMousePosition.x,
+            y: event.touches[0].clientY - previousMousePosition.y
+        };
+
+        const rotateSpeed = 0.01;
+        cube.rotation.x -= deltaMove.y * rotateSpeed;
+        cube.rotation.y -= deltaMove.x * rotateSpeed;
+
+        previousMousePosition = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    }, { passive: false });
+
+    renderer.domElement.addEventListener('touchend', () => {
+        isDragging = false;
     });
 }
 </script>
